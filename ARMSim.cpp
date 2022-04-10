@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <map>
 #include <utility> 
+#include <chrono>
 using namespace std;
 
 unordered_map<int, int> Registers;                                                                          //Stores the registers and their data
@@ -16,6 +17,9 @@ unordered_map<Operations, string> OpMap = {                                     
 
 void Sign(const string& binaryLit, int& val){                                                               //Performs 2s compliment
     if(binaryLit[0] == '1'){
+        if(binaryLit == "10000000000000000000000000000000"){
+            val = -2147483648; return;
+        }
         bool change = false;
         string newBinaryLit = binaryLit;
         for(int i = newBinaryLit.length()-1; i >= 0; i--)
@@ -138,6 +142,7 @@ class Cat4: public Command{
         int immediateVal; };
 
 void WriteDisassembly(const map<int, Command*>& commands, const map<int, pair<string, int>>& dataBlocks){   //Output disassembly.txt
+    cout<<"Got Here!";
     ofstream disassembly ("disassembly.txt");
     if(disassembly){
         for(pair<int, Command*> p : commands)
@@ -229,7 +234,8 @@ void Simulate(map<int, pair<string, int>>& dataBlocks, const map<int, Command*>&
         simulation.close(); }
     else cout<<"Couldn't open simulation.txt!\n"; }
 
-int main(){                                                                                                 //Main Program
+int main(){            
+    chrono::steady_clock::time_point begin = chrono::steady_clock::now();                                                                                     //Main Program
     map<int, pair<string, int>> dataBlocks;                                                                 //Initialize data and command space
     map<int, Command*> commands;
     string commandText;
@@ -243,16 +249,11 @@ int main(){                                                                     
         if(!inData){
             int tag = stoi(commandText.substr(0, 3));
             switch(tag){
-                case 1:
-                    commands[pc] = new Cat1(commandText); break;
-                case 10:
-                    commands[pc] = new Cat2(commandText); break;
-                case 11:
-                    commands[pc] = new Cat3(commandText); break;
-                case 100:
-                    commands[pc] = new Cat4(commandText); break;
-                case 101:
-                    commands[pc] = new Command(commandText);
+                case 1: commands[pc] = new Cat1(commandText); break;
+                case 10: commands[pc] = new Cat2(commandText); break;
+                case 11: commands[pc] = new Cat3(commandText); break;
+                case 100: commands[pc] = new Cat4(commandText); break;
+                case 101: commands[pc] = new Command(commandText);
                     inData = true; break;
                 default: cout<<"Improper tag in binary!\n"; } }
         else{
@@ -262,4 +263,6 @@ int main(){                                                                     
         pc+=4; }
     inFile.close();
     WriteDisassembly(commands, dataBlocks);                                                                 //Write disassembly then perform simulation
-    Simulate(dataBlocks, commands); }
+    Simulate(dataBlocks, commands); 
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    cout<<"Time diff: "<<chrono::duration_cast<chrono::milliseconds>(end-begin).count()<<endl}
