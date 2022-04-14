@@ -1,10 +1,10 @@
+/* On my honor, I have neither given nor received unauthorized aid on this assignment. */
 #include <iostream>                                                                                         //Includes
 #include <fstream> 
 #include <string>
 #include <unordered_map>
 #include <map>
 #include <utility> 
-#include <chrono>
 using namespace std;
 
 unordered_map<int, int> Registers;                                                                          //Stores the registers and their data
@@ -142,7 +142,6 @@ class Cat4: public Command{
         int immediateVal; };
 
 void WriteDisassembly(const map<int, Command*>& commands, const map<int, pair<string, int>>& dataBlocks){   //Output disassembly.txt
-    cout<<"Got Here!";
     ofstream disassembly ("disassembly.txt");
     if(disassembly){
         for(pair<int, Command*> p : commands)
@@ -202,10 +201,10 @@ void Simulate(map<int, pair<string, int>>& dataBlocks, const map<int, Command*>&
                     Registers.at(c->GetDestination()) = (Registers.at(c->GetSource1()) | Registers.at(c->GetSource2())); break; }
                 case LSR: {
                     Cat3* c = dynamic_cast<Cat3*>(com);
-                    Registers.at(c->GetDestination()) = (Registers.at(c->GetSource1())>>Registers.at(c->GetSource2())); break; }
+                    Registers.at(c->GetDestination()) = ((unsigned int)(Registers.at(c->GetSource1()))>>((Registers.at(c->GetSource2())<<27)>>27)); break; }
                 case LSL: {
                     Cat3* c = dynamic_cast<Cat3*>(com);
-                    Registers.at(c->GetDestination()) = (Registers.at(c->GetSource1())<<Registers.at(c->GetSource2())); break; }
+                    Registers.at(c->GetDestination()) = ((unsigned int)(Registers.at(c->GetSource1()))<<((Registers.at(c->GetSource2())<<27)>>27)); break; }
                 case LDUR: {
                     Cat4* c = dynamic_cast<Cat4*>(com);
                     Registers.at(c->GetDestination()) = dataBlocks.at(Registers.at(c->GetSource()) + c->GetImmediate()).second; break; }
@@ -213,6 +212,7 @@ void Simulate(map<int, pair<string, int>>& dataBlocks, const map<int, Command*>&
                     Cat4* c = dynamic_cast<Cat4*>(com);
                     dataBlocks.at(Registers.at(c->GetSource()) + c->GetImmediate()).second = Registers.at(c->GetDestination()); break; }
                 default: { testPurposes = false; } }
+            Registers.at(31) = 0;
             simulation<<"Registers";                                                                        //Output registers
             for(int i = 0; i < 32; i++){
                 if(i%8==0){
@@ -234,8 +234,7 @@ void Simulate(map<int, pair<string, int>>& dataBlocks, const map<int, Command*>&
         simulation.close(); }
     else cout<<"Couldn't open simulation.txt!\n"; }
 
-int main(){            
-    chrono::steady_clock::time_point begin = chrono::steady_clock::now();                                                                                     //Main Program
+int main(int argc, char* argv[]){                                                                                                //Main Program
     map<int, pair<string, int>> dataBlocks;                                                                 //Initialize data and command space
     map<int, Command*> commands;
     string commandText;
@@ -243,8 +242,8 @@ int main(){
     int pc = 64;                                                                            
     for(int i = 0; i < 32; i++) Registers[i] = 0; 
     ifstream inFile;                                                                                        //Open sample.txt
-    inFile.open ("sample.txt");
-    if(!inFile) cout << "Unable to open sample.txt";
+    inFile.open (argv[1]);
+    if(!inFile) cout << "Unable to open " << argv[1];
     while(inFile >> commandText){                                                                           //Read sample.txt and set commands/data
         if(!inData){
             int tag = stoi(commandText.substr(0, 3));
@@ -263,6 +262,4 @@ int main(){
         pc+=4; }
     inFile.close();
     WriteDisassembly(commands, dataBlocks);                                                                 //Write disassembly then perform simulation
-    Simulate(dataBlocks, commands); 
-    chrono::steady_clock::time_point end = chrono::steady_clock::now();
-    cout<<"Time diff: "<<chrono::duration_cast<chrono::milliseconds>(end-begin).count()<<endl}
+    Simulate(dataBlocks, commands); }
